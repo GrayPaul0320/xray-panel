@@ -1,0 +1,8 @@
+package comm
+
+// 此包将实现 WebSocket 通讯协议和 JWT 鉴权
+// 待实现功能:
+// - WebSocket 连接管理
+// - 消息序列化/反序列化
+// - JWT Token 验证
+// - Master-Slave 通讯协议

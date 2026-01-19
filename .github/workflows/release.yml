@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build Slave binaries
+        run: |
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -o slave-linux-amd64 -ldflags="-s -w" cmd/slave/main.go
+          
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -o slave-linux-arm64 -ldflags="-s -w" cmd/slave/main.go
+          
+          # Linux ARMv7
+          GOOS=linux GOARCH=arm GOARM=7 go build -o slave-linux-armv7 -ldflags="-s -w" cmd/slave/main.go
+          
+          # Make executable
+          chmod +x slave-*
+
+      - name: Build Master binaries
+        run: |
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -o master-linux-amd64 -ldflags="-s -w" cmd/master/main.go
+          
+          # Make executable
+          chmod +x master-*
+
+      - name: Generate checksums
+        run: |
+          sha256sum slave-* master-* > SHA256SUMS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            slave-linux-amd64
+            slave-linux-arm64
+            slave-linux-armv7
+            master-linux-amd64
+            SHA256SUMS
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

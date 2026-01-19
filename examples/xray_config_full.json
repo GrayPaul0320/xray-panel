@@ -1,0 +1,189 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "port": 1080,
+      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      }
+    },
+    {
+      "tag": "http-in",
+      "port": 1081,
+      "protocol": "http",
+      "listen": "127.0.0.1",
+      "settings": {}
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "AsIs"
+      }
+    },
+    {
+      "tag": "proxy-us-1",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "us1.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "your-uuid-here",
+                "security": "auto",
+                "alterId": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/ray"
+        }
+      },
+      "mux": {
+        "enabled": true,
+        "concurrency": 8
+      }
+    },
+    {
+      "tag": "proxy-us-2",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "us2.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "your-uuid-here",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls"
+      }
+    },
+    {
+      "tag": "proxy-hk",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "hk.example.com",
+            "port": 443,
+            "password": "your-password-here"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls"
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "http"
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "hybrid",
+    "rules": [
+      {
+        "type": "field",
+        "domain": [
+          "geosite:category-ads-all"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:cn",
+          "geosite:apple-cn"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:cn"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:google",
+          "geosite:youtube"
+        ],
+        "balancerTag": "us-balancer"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:netflix"
+        ],
+        "outboundTag": "proxy-us-1"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:geolocation-!cn"
+        ],
+        "balancerTag": "global-balancer"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "global-balancer"
+      }
+    ],
+    "balancers": [
+      {
+        "tag": "us-balancer",
+        "selector": [
+          "proxy-us-"
+        ],
+        "strategy": "leastPing"
+      },
+      {
+        "tag": "global-balancer",
+        "selector": [
+          "proxy-"
+        ],
+        "strategy": "random"
+      }
+    ]
+  }
+}

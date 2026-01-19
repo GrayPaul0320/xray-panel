@@ -1,0 +1,92 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "stats": {},
+  "api": {
+    "tag": "api",
+    "services": [
+      "StatsService"
+    ]
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "statsUserUplink": true,
+        "statsUserDownlink": true
+      }
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true,
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  },
+  "inbounds": [
+    {
+      "tag": "vmess-in",
+      "port": 10086,
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "alterId": 0,
+            "email": "user@example.com"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp"
+      }
+    },
+    {
+      "tag": "vless-in",
+      "port": 10087,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30812",
+            "email": "vless-user@example.com"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp"
+      }
+    },
+    {
+      "tag": "socks-in",
+      "port": 10088,
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "block"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["api"],
+        "outboundTag": "api"
+      }
+    ]
+  }
+}
